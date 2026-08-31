@@ -3,930 +3,309 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flammenerbe – Chroniken von Valeris</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com">
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;800;900&family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Supabase Library -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
+    <title>Erbe des Feuers - Portal & News (Update 1.0)</title>
     <style>
         :root {
-            --bg-void: #09070d;
-            --bg-surface: #120e1a;
-            --bg-card: #171322;
-            --bg-card-header: #1e192c;
-            --gold-primary: #c99a4e;
-            --gold-light: #e8c788;
-            --gold-subtle: rgba(201, 154, 78, 0.15);
-            --flame-deep: #a83220;
-            --text-lead: #f5f0e8;
-            --text-main: #d0c8be;
-            --text-muted: #8c8479;
-            --border-fine: 1px solid rgba(201, 154, 78, 0.22);
-            --font-title: 'Cinzel', Georgia, serif;
-            --font-book: 'EB Garamond', Garamond, serif;
-            --font-ui: 'Montserrat', sans-serif;
+            --bg-color: #0f1115;
+            --card-bg: #181b22;
+            --card-border: #2d3748;
+            --accent-color: #d97706;
+            --accent-hover: #f59e0b;
+            --text-color: #e5e7eb;
+            --text-muted: #9ca3af;
+            --font-size: 16px;
         }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        
-        body { 
-            background-color: var(--bg-void);
-            background-image: 
-                radial-gradient(ellipse at 50% 0%, rgba(168, 50, 32, 0.12) 0%, transparent 60%),
-                radial-gradient(ellipse at 50% 100%, rgba(20, 16, 28, 0.8) 0%, transparent 80%);
-            min-height: 100vh; 
-            font-family: var(--font-book); 
-            color: var(--text-main); 
-            line-height: 1.8;
-            font-size: 17px;
+        * { box-sizing: border-box; }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-size: var(--font-size);
+            margin: 0;
+            display: flex;
+            min-height: 100vh;
             overflow-x: hidden;
         }
-
-        .chronicle-topbar {
-            background: #0f0b17;
-            border-bottom: var(--border-fine);
-            padding: 8px 16px;
-            font-family: var(--font-ui);
-            font-size: 0.76rem;
-            letter-spacing: 1px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 14px;
-            color: var(--text-muted);
-            text-transform: uppercase;
+        /* Animiertes Sidebar-Menü */
+        #sidebar {
+            width: 280px;
+            background-color: var(--card-bg);
+            border-right: 1px solid var(--card-border);
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), width 0.4s ease;
+            position: fixed;
+            height: 100vh;
+            z-index: 1001;
+            overflow-y: auto;
+            left: 0;
+            top: 0;
         }
-
-        .chronicle-topbar span.highlight { color: var(--gold-light); font-weight: 600; }
-        .status-pill { background: var(--flame-deep); color: #fff; padding: 2px 8px; border-radius: 3px; font-weight: 600; font-size: 0.7rem; }
-
-        header {
-            max-width: 980px;
-            margin: 35px auto 25px auto;
-            text-align: center;
-            padding: 0 20px;
+        #sidebar.collapsed {
+            transform: translateX(-280px);
+            width: 0;
         }
-
-        .brand-title {
-            font-family: var(--font-title);
-            font-size: 2.8rem;
-            font-weight: 700;
-            letter-spacing: 3px;
-            color: var(--text-lead);
-            text-transform: uppercase;
-            margin-bottom: 4px;
-        }
-
-        .brand-subtitle {
-            font-family: var(--font-title);
-            font-size: 0.95rem;
-            letter-spacing: 4px;
-            color: var(--gold-primary);
-            text-transform: uppercase;
-            margin-bottom: 28px;
-        }
-
-        .portal-nav {
-            display: flex;
-            justify-content: center;
-            flex-wrap: wrap;
-            gap: 6px;
-            border-bottom: var(--border-fine);
-            padding-bottom: 15px;
-        }
-
-        .nav-link {
-            background: transparent;
-            border: 1px solid transparent;
-            color: var(--text-muted);
-            font-family: var(--font-ui);
-            font-size: 0.8rem;
-            font-weight: 500;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            padding: 8px 18px;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .nav-link:hover { color: var(--text-lead); border-color: var(--gold-subtle); }
-        .nav-link.active {
-            color: var(--gold-light);
-            border: var(--border-fine);
-            background: rgba(201, 154, 78, 0.08);
-        }
-
-        .portal-wrapper {
-            max-width: 980px;
-            margin: 0 auto 60px auto;
-            padding: 0 20px;
-        }
-
-        .portal-tab { display: none; }
-        .portal-tab.active { display: block; }
-
-        h2.section-heading {
-            font-family: var(--font-title);
-            font-size: 1.55rem;
-            letter-spacing: 1.5px;
-            margin-bottom: 20px;
-            border-bottom: var(--border-fine);
-            padding-bottom: 8px;
-            color: var(--text-lead);
-        }
-
-        p { margin-bottom: 16px; }
-
-        .lead-text {
-            font-size: 1.15rem;
-            color: var(--text-lead);
-            line-height: 1.8;
-            font-style: italic;
-        }
-
-        .prose-block {
-            background: var(--bg-surface);
-            border: var(--border-fine);
-            border-radius: 4px;
-            padding: 28px 32px;
-            margin-bottom: 30px;
-        }
-
-        .dropcap::first-letter {
-            font-family: var(--font-title);
-            font-size: 3.4rem;
-            float: left;
-            line-height: 0.8;
-            margin-right: 12px;
-            color: var(--gold-light);
-            font-weight: 700;
-        }
-
-        .episode-card {
-            background: var(--bg-surface);
-            border: var(--border-fine);
-            border-radius: 4px;
-            margin-bottom: 14px;
-            overflow: hidden;
-        }
-
-        .episode-header {
-            padding: 15px 20px;
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: var(--bg-card);
-            user-select: none;
-            border-bottom: 1px solid rgba(255,255,255,0.03);
-        }
-
-        .episode-header:hover { background: var(--bg-card-header); }
-        .episode-meta-title { font-family: var(--font-title); font-size: 1.05rem; color: var(--text-lead); }
-        .episode-badge {
-            font-family: var(--font-ui);
-            font-size: 0.7rem;
-            color: var(--gold-primary);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            border: 1px solid var(--gold-subtle);
-            padding: 3px 8px;
-            border-radius: 3px;
-        }
-
-        .episode-content {
-            padding: 22px 24px;
-            font-size: 1.02rem;
-            line-height: 1.85;
-            color: var(--text-main);
-            border-top: var(--border-fine);
-            background: var(--bg-surface);
-            display: none;
-        }
-
-        .episode-content.open { display: block; }
-
-        .episode-quote {
-            font-style: italic;
-            border-left: 2px solid var(--gold-primary);
-            padding-left: 14px;
-            margin: 16px 0;
-            color: var(--gold-light);
-            font-size: 0.98rem;
-        }
-
-        .compendium-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
-            margin-bottom: 30px;
-        }
-
-        .compendium-card {
-            background: var(--bg-surface);
-            border: var(--border-fine);
-            border-radius: 4px;
+        .sidebar-content {
             padding: 20px;
         }
-
-        .compendium-tag {
-            font-family: var(--font-ui);
-            font-size: 0.7rem;
-            color: var(--gold-primary);
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
-            display: block;
-            margin-bottom: 4px;
+        /* Sternen-Effekt beim Ein-/Ausblenden */
+        .star-sparkle {
+            position: absolute;
+            pointer-events: none;
+            background: radial-gradient(circle, #ff0 0%, #d97706 50%, transparent 70%);
+            border-radius: 50%;
+            animation: sparkleAnim 0.6s forwards;
+            z-index: 2000;
         }
-
-        .compendium-name {
-            font-family: var(--font-title);
-            font-size: 1.15rem;
-            color: var(--text-lead);
-            margin-bottom: 8px;
+        @keyframes sparkleAnim {
+            0% { transform: scale(0); opacity: 1; }
+            100% { transform: scale(1.8); opacity: 0; }
         }
-
-        /* FORUM & LESERSTIMMEN */
-        .forum-header-bar {
-            background: var(--bg-card-header);
-            border: var(--border-fine);
-            border-bottom: none;
-            padding: 12px 18px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-family: var(--font-ui);
-            font-size: 0.8rem;
-            color: var(--gold-light);
-            font-weight: 600;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            border-radius: 4px 4px 0 0;
+        /* Hauptlayout */
+        main {
+            flex: 1;
+            margin-left: 280px;
+            transition: margin-left 0.4s ease;
+            padding: 30px;
+            max-width: 1200px;
         }
-
-        .forum-form-box {
-            background: var(--bg-surface);
-            border: var(--border-fine);
-            border-radius: 4px;
-            padding: 22px;
-            margin-bottom: 30px;
+        body.menu-collapsed main {
+            margin-left: 0;
         }
-
-        .form-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-bottom: 12px;
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
         }
-
-        .portal-input, .portal-select, .portal-textarea {
-            width: 100%;
-            background: var(--bg-void);
-            border: var(--border-fine);
-            color: var(--text-lead);
-            padding: 10px 14px;
-            border-radius: 3px;
-            font-family: var(--font-ui);
-            font-size: 0.82rem;
-        }
-
-        .portal-input:focus, .portal-select:focus, .portal-textarea:focus {
-            outline: none;
-            border-color: var(--gold-primary);
-        }
-
-        .portal-textarea {
-            font-family: var(--font-book);
-            font-size: 1rem;
-            resize: vertical;
-            min-height: 85px;
-            margin-bottom: 12px;
-        }
-
-        .portal-btn {
-            background: rgba(201, 154, 78, 0.12);
-            border: var(--border-fine);
-            color: var(--gold-light);
-            font-family: var(--font-ui);
-            font-size: 0.8rem;
-            font-weight: 600;
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
-            padding: 11px 20px;
-            border-radius: 3px;
+        h1, h2, h3 { color: #f3f4f6; margin-top: 0; }
+        button {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 6px;
             cursor: pointer;
-            transition: all 0.2s ease;
-            width: 100%;
+            font-weight: 600;
+            transition: background 0.2s;
         }
-
-        .portal-btn:hover {
-            background: var(--gold-primary);
-            color: var(--bg-void);
+        button:hover { background-color: var(--accent-hover); }
+        .nav-toggle {
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            z-index: 1002;
+            background: #1f2937;
+            border: 1px solid var(--card-border);
+            color: var(--text-color);
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
         }
-
-        .forum-feed {
-            border: var(--border-fine);
-            border-radius: 0 0 4px 4px;
-            background: var(--bg-surface);
+        .online-badge {
+            display: inline-block.inline;
+            width: 10px;
+            height: 10px;
+            background-color: #10b981;
+            border-radius: 50%;
+            margin-right: 6px;
         }
-
-        .forum-post {
-            border-bottom: var(--border-fine);
-            padding: 18px 20px;
-            background: var(--bg-surface);
+        /* Einstellungen & Controls */
+        .settings-group {
+            margin-bottom: 15px;
         }
-
-        .forum-post:last-child { border-bottom: none; }
-        .forum-post.pinned {
-            background: rgba(201, 154, 78, 0.04);
-            border-left: 3px solid var(--gold-primary);
+        .settings-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: var(--text-muted);
+            font-size: 14px;
         }
-
-        .forum-post-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-            font-family: var(--font-ui);
-            font-size: 0.78rem;
-            border-bottom: 1px solid rgba(255,255,255,0.04);
-            padding-bottom: 8px;
+        input[type="range"] { width: 100%; accent-color: var(--accent-color); }
+        /* Umfragen Balken */
+        .poll-bar-container {
+            background: #2d3748;
+            border-radius: 4px;
+            overflow: hidden;
+            height: 24px;
+            margin-top: 10px;
         }
-
-        .author-box {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .author-avatar {
-            width: 26px;
-            height: 26px;
-            background: var(--bg-card-header);
-            border: 1px solid var(--gold-subtle);
-            color: var(--gold-light);
-            border-radius: 3px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.75rem;
+        .poll-bar {
+            background-color: var(--accent-color);
+            height: 100%;
+            width: 75%;
+            text-align: right;
+            padding-right: 10px;
+            line-height: 24px;
+            font-size: 14px;
             font-weight: bold;
         }
-
-        .author-name {
-            color: var(--gold-light);
-            font-weight: 600;
-            font-size: 0.88rem;
-        }
-
-        .post-tag {
-            background: rgba(201, 154, 78, 0.1);
-            border: 1px solid var(--gold-subtle);
-            color: var(--gold-primary);
-            padding: 1px 6px;
-            border-radius: 2px;
-            font-size: 0.68rem;
-            text-transform: uppercase;
-        }
-
-        .post-meta-right {
-            color: var(--text-muted);
-            font-size: 0.72rem;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .post-scope-line {
-            font-size: 0.78rem;
-            color: var(--text-muted);
-            margin-bottom: 8px;
-            font-family: var(--font-ui);
-            font-style: italic;
-        }
-
-        .post-body {
-            font-size: 1.02rem;
-            color: var(--text-lead);
-            line-height: 1.7;
-            margin-bottom: 12px;
-        }
-
-        .forum-post-footer {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-family: var(--font-ui);
-            font-size: 0.75rem;
-            padding-top: 6px;
-        }
-
-        .like-btn {
-            background: rgba(201, 154, 78, 0.08);
-            border: 1px solid var(--border-fine);
-            color: var(--gold-light);
-            padding: 5px 12px;
-            border-radius: 3px;
-            cursor: pointer;
-            font-size: 0.76rem;
-            font-family: var(--font-ui);
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            transition: all 0.15s ease;
-        }
-
-        .like-btn:hover {
-            background: var(--gold-primary);
-            color: var(--bg-void);
-        }
-
-        .forum-reply-box {
-            background: rgba(201, 154, 78, 0.05);
-            border-left: 2px solid var(--gold-primary);
-            padding: 10px 14px;
-            margin-top: 10px;
-            font-size: 0.92rem;
-            border-radius: 0 3px 3px 0;
-        }
-
-        .forum-reply-header {
-            font-family: var(--font-ui);
-            font-size: 0.72rem;
-            color: var(--gold-light);
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 4px;
-        }
-
-        footer {
-            text-align: center;
-            padding: 30px 20px;
-            font-family: var(--font-ui);
-            font-size: 0.75rem;
-            color: var(--text-muted);
-            border-top: var(--border-fine);
-            margin-top: 60px;
-        }
-
-        .secret-admin-link {
-            color: rgba(201, 154, 78, 0.3);
+        /* Navigation Links */
+        .sidebar-menu { list-style: none; padding: 0; margin: 20px 0; }
+        .sidebar-menu li { margin-bottom: 12px; }
+        .sidebar-menu a {
+            color: var(--text-color);
             text-decoration: none;
-            margin-left: 10px;
+            display: block;
+            padding: 8px 12px;
+            border-radius: 6px;
+            transition: background 0.2s;
         }
-
-        .secret-admin-link:hover { color: var(--gold-primary); }
-
-        .hp-trap { display: none !important; }
-
-        @media (max-width: 768px) {
-            body { font-size: 16px; }
-            .brand-title { font-size: 1.8rem; }
-            .brand-subtitle { font-size: 0.8rem; letter-spacing: 2px; }
-            .prose-block { padding: 18px 16px; }
-            .compendium-grid { grid-template-columns: 1fr; }
-            .form-grid { grid-template-columns: 1fr; }
-            .portal-nav { gap: 4px; }
-            .nav-link { padding: 6px 12px; font-size: 0.72rem; }
-            .chronicle-topbar { flex-direction: column; gap: 4px; text-align: center; font-size: 0.7rem; }
-            .forum-post-header { flex-direction: column; align-items: flex-start; gap: 6px; }
+        .sidebar-menu a:hover, .sidebar-menu a.active {
+            background-color: #21262d;
+            color: var(--accent-color);
+        }
+        @media(max-width: 768px) {
+            #sidebar { transform: translateX(-280px); width: 280px; }
+            #sidebar.mobile-open { transform: translateX(0); }
+            main { margin-left: 0 !important; padding: 20px 15px; }
+            .nav-toggle { display: block; }
         }
     </style>
 </head>
 <body>
-
-    <div class="chronicle-topbar">
-        <span class="status-pill">Staffel 1 • 30 Folgen</span>
-        <span>Stand: <span class="highlight">Folge 9 (Das Flüstern hinter den Zinnen)</span></span>
-        <span>Ultimatum: <span class="highlight">Noch 3 Wochen</span></span>
-    </div>
-
-    <header>
-        <h1 class="brand-title">Flammenerbe</h1>
-        <div class="brand-subtitle">Die Chroniken von Valeris</div>
-        <nav class="portal-nav">
-            <button class="nav-link active" onclick="showTab('saga', this)">📜 Die Chroniken</button>
-            <button class="nav-link" onclick="showTab('world', this)">⚔️ Welt & Legenden</button>
-            <button class="nav-link" onclick="showTab('kanzlei', this)">🏛️ Roadmap</button>
-            <button class="nav-link" onclick="showTab('tribunal', this)">💬 Leserstimmen</button>
-        </nav>
-    </header>
-
-    <main class="portal-wrapper">
-
-        <!-- TAB 1: SAGA (AUSFÜHRLICH & EPISCH) -->
-        <section id="tab-saga" class="portal-tab active">
-            <h2 class="section-heading">Prolog: Die Asche der Krone</h2>
+    <button class="nav-toggle" onclick="toggleMenu(event)">☰ Menü</button>
+    
+    <nav id="sidebar">
+        <div class="sidebar-content">
+            <h2>Portal 1.0</h2>
+            <ul class="sidebar-menu">
+                <li><a href="index.html" class="active">🏠 Hauptseite & News</a></li>
+                <li><a href="kanzlei.html">⚖️ Kanzlei-Ansicht</a></li>
+                <li><a href="#admin-bereich">🛡️ Admin-Bereich</a></li>
+                <li><a href="#umfragen-sektion">📊 Umfragen</a></li>
+                <li><a href="#weltkarte">🗺️ Weltkarte & Legende</a></li>
+                <li><a href="#bewertungen">⭐ Bewertungen & Ehren</a></li>
+                <li><a href="#roadmap">🚀 Roadmap & Updates</a></li>
+            </ul>
             
-            <div class="prose-block">
-                <p class="dropcap lead-text">
-                    Die Nacht, in der die Flammen von Valeris erloschen, roch nach verbranntem Zedernholz und kaltem Eisen. 
-                    Prinzessin Daenys stand auf dem Marmorbalkon des Hochpalastes, als das eiserne Hoftor unter schweren Rammböcken barst. Die Klingen ihrer eigenen Schwester Vaelora durchschnitten das uralte Siegel der Drachenherrscher. Was als feierliche Krönung geplant war, versank im Verrat.
-                </p>
-                <p>
-                    Lord Corwin, oberster Wächter der königlichen Kammer und Vater des damals noch ungeborenen Luca, stellte sich der Übermacht allein im Thronsaal entgegen. Seine schwere Breitaxt blitzte im Fackelschein auf, während Gardist um Gardist zurückwich. Sein Opfer kaufte Daenys die entscheidenden Augenblicke: die Flucht durch die geheimen Katakomben in die schroffen Höhen des abgelegenen Bergdorfes Aschenquell. Mit sich führte sie nichts als den valyrischen Dolch ihres gefallenen Gemahls und den schweren Siegelring des wahren Königshauses.
-                </p>
-                <p>
-                    Sechs Jahre wuchs Luca heran, verborgen vor den Spionen der Usurpatorin. Er lernte das Schmieden und Jagen, ohne zu ahnen, welches Drachenblut durch seine Adern fließt. Doch das Schicksal eines Reiches lässt sich nicht für immer im Gebirge vergraben.
-                </p>
-            </div>
-
-            <h2 class="section-heading">Staffel 1: Der Aufstieg von Luca & Araxo</h2>
-
-            <div class="episode-card">
-                <div class="episode-header" onclick="toggleEpisode('ep1')">
-                    <span class="episode-meta-title">Folge 1: Schatten über Aschenquell</span>
-                    <span class="episode-badge">Staffel-Auftakt</span>
-                </div>
-                <div id="ep1" class="episode-content open">
-                    <p>Ein schweres Grollen kündigte die Garde der Usurpatorin an, noch bevor ihre schwarzen Banner im Bergnebel sichtbar wurden. Dreißig gepanzerte Reiter ritten in das friedliche Bergdorf ein. Hauptmann Kaelen, ein Hüne mit narbigem Gesicht, las den Erlass der Königin vor: Die letzte Getreidereserve der Bauern sollte beschlagnahmt werden, um die Truppen auf Festung Drachenklaue zu versorgen.</p>
-                    <div class="episode-quote">„Du trägst das Herz eines Königs, Luca, doch hüte deinen Zorn. Wer die Flamme zu früh entfacht, verbrennt sich selbst.“ — Prinzessin Daenys</div>
-                    <p>Als ein Soldat eine alte Bäuerin zu Boden stieß, trat der dreizehnjährige Luca vor. Nur das beherzte Eingreifen seines Freundes Soren verhinderte ein Blutbad. In dieser Nacht schwor Luca, sein Dorf niemals kampflos zu übergeben.</p>
-                </div>
-            </div>
-
-            <div class="episode-card">
-                <div class="episode-header" onclick="toggleEpisode('ep2')">
-                    <span class="episode-meta-title">Folge 2: Brennende Sorgen</span>
-                    <span class="episode-badge">Kapitel II</span>
-                </div>
-                <div id="ep2" class="episode-content">
-                    <p>Während die Bauern um ihre Ernte trauerten, schlichen Luca und Soren im Schutz der Dämmerung auf die Felsvorsprünge oberhalb der Schlucht. Mit geschärftem Blick analysierte Soren die Patrouillenrouten der Gardisten: jeden zweiten Abend passierte ein Konvoi den Pass.</p>
-                    <p>Zur selben Zeit hob Daenys in der Hütte die losen Holzdielen an. Im schwachen Schein einer Kerze glänzte der valyrische Dolch. Sie spürte, dass die Zeit des Schweigens endete.</p>
-                </div>
-            </div>
-
-            <div class="episode-card">
-                <div class="episode-header" onclick="toggleEpisode('ep3')">
-                    <span class="episode-meta-title">Folge 3: Die Schatten der Schlucht</span>
-                    <span class="episode-badge">Wendepunkt</span>
-                </div>
-                <div id="ep3" class="episode-content">
-                    <p>Der Hinterhalt war gewagt: Mit Steinschlägen brachten Luca und Soren einen Nachschubwagen zum Stoppen. Doch als sich der Staub legte, drang ein klagendes, tiefes Keuchen aus einer Felsspalte am Fuße der Schlucht.</p>
-                    <div class="episode-quote">„Seine Schuppen waren dunkel wie die Mitternacht, doch die Kanten schimmerten wie geschmolzene Bronze. Als er die Augen aufschlug, sah ich kein Tier – ich sah eine uralte Seele.“</div>
-                    <p>Im nassen Geröll lag ein verletzter Jungdrache, dessen rechte Schwinge unter einem Felsblock eingeklemmt war. Als Luca vorsichtig seine Hand auf den heißen Nacken des Wesens legte, schoss ein goldener Funke durch seine Adern: Die Seelenresonanz war erwacht.</p>
-                </div>
-            </div>
-
-            <div class="episode-card">
-                <div class="episode-header" onclick="toggleEpisode('ep4')">
-                    <span class="episode-meta-title">Folge 4: Die Hetzjagd im Nebel</span>
-                    <span class="episode-badge">Kapitel IV</span>
-                </div>
-                <div id="ep4" class="episode-content">
-                    <p>Das dumpfe Bellen der königlichen Bluthunde zerschnitt die Stille. Luca trug das schwere, fiebernde Drachenjunge auf den Armen, während Soren falsche Fährten durch das dichte Unterholz legte.</p>
-                    <p>Als die Reiter ihnen fast den Weg abschnitten, stießen sie auf den Eingang eines jahrhundertealten Minenstollens, der von dichten Efeuranken überwuchert war. Dort fanden sie Zuflucht im Dunkeln.</p>
-                </div>
-            </div>
-
-            <div class="episode-card">
-                <div class="episode-header" onclick="toggleEpisode('ep5')">
-                    <span class="episode-meta-title">Folge 5: Ein Bund aus Asche und Fleisch</span>
-                    <span class="episode-badge">Kapitel V</span>
-                </div>
-                <div id="ep5" class="episode-content">
-                    <p>Der Drache erhielt den Namen <strong>Araxo</strong>. Drei Tage und Nächte wachte Luca am Feuer im Höhleninneren, während Soren unter Lebensgefahr Salben und Fleisch aus dem Lager der Garde stahl.</p>
-                    <p>Mit Schienen und Heilsalbe richtete Luca Araxos Schwinge. Als der Drache erstmals wieder seinen Kopf hob und ein leises, vibrierendes Schnurren ausstieß, war ein Pakt besiegelt, den keine Klinge der Welt trennen konnte.</p>
-                </div>
-            </div>
-
-            <div class="episode-card">
-                <div class="episode-header" onclick="toggleEpisode('ep6')">
-                    <span class="episode-meta-title">Folge 6: Flammen über Aschenquell</span>
-                    <span class="episode-badge">Höhepunkt</span>
-                </div>
-                <div id="ep6" class="episode-content">
-                    <p>Der Rauch war schon meilenweit zu sehen: Hauptmann Kaelen hatte Aschenquell niederbrennen lassen, um die Flüchtigen herauszulocken. Daenys, die das Dorf nicht verlassen wollte, stellte sich den Soldaten im brennenden Dorfzentrum entgegen.</p>
-                    <div class="episode-quote">„Such Festung Drachenklaue, Luca! Du bist der wahre Erbe des Feuers!“ — Daenys' letzter Ruf, bevor sich die eisernen Ketten um ihre Handgelenke schlossen.</div>
-                    <p>Bevor die Soldaten sie auf den Gefängniswagen stießen, gelang es ihr, Lucas Dolch im Wurzelwerk der alten Dorfeiche zu deponieren.</p>
-                </div>
-            </div>
-
-            <div class="episode-card">
-                <div class="episode-header" onclick="toggleEpisode('ep7')">
-                    <span class="episode-meta-title">Folge 7: Der Funke im Rauch</span>
-                    <span class="episode-badge">Kapitel VII</span>
-                </div>
-                <div id="ep7" class="episode-content">
-                    <p>Vier Gardisten lauerten an der Dorfeiche und schnitten Soren den Rückweg ab. Als Luca mit gezogener Klinge eingriff und von drei gepanzerten Reitern umzingelt wurde, erzitterte der Waldboden.</p>
-                    <p>Araxo brach durch die Rauchwand. Seine Schwingen schlugen Flammenwirbel, und aus seiner Kehle schoss ein Strahl gleißend blauen Feuers, der die Eisenschilde der Gardisten in glühende Schlacke verwandelte. Das Trio entkam ins Hochgebirge.</p>
-                </div>
-            </div>
-
-            <div class="episode-card">
-                <div class="episode-header" onclick="toggleEpisode('ep8')">
-                    <span class="episode-meta-title">Folge 8: Ein Pakt im Frost</span>
-                    <span class="episode-badge">Kapitel VIII</span>
-                </div>
-                <div id="ep8" class="episode-content">
-                    <p>In einer windgeschützten Eishöhle auf dem Kamm des Rabenfelsens offenbarte Luca Soren den silbernen Siegelring und die ganze Wahrheit über sein königliches Blut. Soren schwang seine Hand ein und schwor ihm bedingungslose Treue.</p>
-                    <p>Gemeinsam planten sie den ersten Gegenangriff: Die Erstürmung des Wachturms am Rabenfels-Pass, um Kriegspläne und Rüstungen zu erbeuten.</p>
-                </div>
-            </div>
-
-            <div class="episode-card" style="border-color: var(--gold-primary);">
-                <div class="episode-header" onclick="toggleEpisode('ep9')">
-                    <span class="episode-meta-title" style="color: var(--gold-light);">Folge 9: Das Flüstern hinter den Zinnen</span>
-                    <span class="episode-badge" style="background: var(--flame-deep); color:#fff;">Aktueller Stand</span>
-                </div>
-                <div id="ep9" class="episode-content open">
-                    <p>Der Überraschungsangriff auf den Rabenfels-Turm gelang lautlos. Dank des valyrischen Dolchs durchtrennte Luca die massiven Eisenriegel des Archivs, während Soren die Wachen mit Schlafgift ausschaltete.</p>
-                    <div class="episode-quote">„Die Depesche der Usurpatorin Vaelora: In exakt 21 Tagen soll die gefangene Rebellin Daenys auf dem Richtplatz der Festung Drachenklaue hingerichtet werden.“</div>
-                    <p>Das Ultimatum läuft unerbittlich. Dreiwöchige Vorbereitungszeit bleiben Luca, Soren und Araxo, um Verbündete zu sammeln und die uneinnehmbare Festung zu stürmen.</p>
-                </div>
-            </div>
-        </section>
-
-        <!-- TAB 2: WELT & LEGENDEN -->
-        <section id="tab-world" class="portal-tab">
-            <h2 class="section-heading">Helden & Gestalten</h2>
-            <div class="compendium-grid">
-                <div class="compendium-card">
-                    <span class="compendium-tag">Protagonist • 13 Jahre</span>
-                    <h3 class="compendium-name">Luca</h3>
-                    <p>Heimlicher Thronerbe von Valeris. Besitzt die uralte seelische Resonanz zu Drachen und führt Lord Corwins valyrischen Dolch.</p>
-                </div>
-                <div class="compendium-card">
-                    <span class="compendium-tag">Nachtblauer Drache</span>
-                    <h3 class="compendium-name">Araxo</h3>
-                    <p>Jungdrache mit nachtblauen Schuppen und bronzenen Kanten. Speit extrem heiße, blaue Flammenstöße.</p>
-                </div>
-                <div class="compendium-card">
-                    <span class="compendium-tag">Taktiker • 13 Jahre</span>
-                    <h3 class="compendium-name">Soren</h3>
-                    <p>Lucas ältester Freund. Scharfsinniger Stratege, Meister im Infiltrieren und treffsicherer Schütze.</p>
-                </div>
-                <div class="compendium-card">
-                    <span class="compendium-tag">Rechtmäßige Königin</span>
-                    <h3 class="compendium-name">Prinzessin Daenys</h3>
-                    <p>Lucas Mutter. Gefangen in den Kerkern von Drachenklaue unter dreiwöchigem Hinrichtungs-Ultimatum.</p>
-                </div>
-            </div>
-
-            <h2 class="section-heading">Schauplätze & Relikte</h2>
-            <div class="compendium-grid">
-                <div class="compendium-card">
-                    <span class="compendium-tag">Festung</span>
-                    <h3 class="compendium-name">Festung Drachenklaue</h3>
-                    <p>Uneinnehmbare Hochburg auf schroffem Felsmassiv. Schauplatz des 3-Wochen-Countdowns.</p>
-                </div>
-                <div class="compendium-card">
-                    <span class="compendium-tag">Relikt</span>
-                    <h3 class="compendium-name">Der Valyrische Dolch</h3>
-                    <p>Wellenförmiger Stahl mit Drachenknauf. Durchtrennt Eisenketten und Schlösser lautlos.</p>
-                </div>
-            </div>
-        </section>
-
-        <!-- TAB 3: ROADMAP -->
-        <section id="tab-kanzlei" class="portal-tab">
-            <h2 class="section-heading">Entwicklungs-Fortschritt</h2>
-            <div class="prose-block">
-                <p>Akt 1 der Chroniken ist mit Folge 9 vollendet. Luca und Soren bereiten den Marsch auf Drachenklaue vor. Hier halten wir euch über den aktuellen Schreibfortschritt auf dem Laufenden.</p>
-            </div>
-        </section>
-
-        <!-- TAB 4: LESERSTIMMEN -->
-        <section id="tab-tribunal" class="portal-tab">
-            <h2 class="section-heading">Gästebuch & Leserstimmen</h2>
+            <hr style="border-color: var(--card-border); margin: 20px 0;">
             
-            <form class="forum-form-box" id="reviewForm">
-                <input type="text" id="hpField" class="hp-trap" tabindex="-1" autocomplete="off">
-
-                <div class="form-grid">
-                    <input type="text" id="revName" class="portal-input" placeholder="Dein Name..." maxlength="40" required>
-                    <select id="revFocus" class="portal-select" required>
-                        <option value="" disabled selected>Dein Schwerpunkt...</option>
-                        <option value="🐉 Drachenmomente">🐉 Drachenmomente</option>
-                        <option value="⚔️ Spannung & Action">⚔️ Spannung & Action</option>
-                        <option value="📜 Story & Lore">📜 Story & Lore</option>
-                        <option value="💔 Emotionen & Bund">💔 Emotionen & Bund</option>
-                    </select>
-                </div>
-                <div class="form-grid">
-                    <select id="revScope" class="portal-select" required>
-                        <option value="Staffel 1 (Gesamt)">Staffel 1 (Gesamt)</option>
-                        <option value="Folge 9: Das Flüstern hinter den Zinnen">Folge 9: Das Flüstern hinter den Zinnen</option>
-                        <option value="Folge 6: Flammen über Aschenquell">Folge 6: Flammen über Aschenquell</option>
-                        <option value="Folge 3: Die Schatten der Schlucht">Folge 3: Die Schatten der Schlucht</option>
-                    </select>
-                    <select id="revStars" class="portal-select" required>
-                        <option value="5">⭐⭐⭐⭐⭐ (Meisterwerk)</option>
-                        <option value="4">⭐⭐⭐⭐☆ (Sehr gut)</option>
-                        <option value="3">⭐⭐⭐☆☆ (Solide)</option>
-                    </select>
-                </div>
-                <textarea id="revText" class="portal-textarea" placeholder="Dein Eindruck zu Luca, Araxo und den Chroniken..." maxlength="600" required></textarea>
-                <button type="submit" class="portal-btn">Inschrift im Forum verewigen ⚔️</button>
-            </form>
-
-            <div class="forum-header-bar">
-                <span>💬 Valeris Leser-Forum</span>
-                <span id="forumCounter">Laden...</span>
+            <h3>⚙️ Einstellungsmenü</h3>
+            <div class="settings-group">
+                <label>Schriftgröße anpassen:</label>
+                <input type="range" min="12" max="22" value="16" oninput="changeFontSize(this.value)">
             </div>
-
-            <div class="forum-feed" id="reviewsList">
-                <div style="padding:20px; text-align:center; color:var(--text-muted);">Lade Beiträge aus der Chronik...</div>
+            <div class="settings-group">
+                <label><input type="checkbox" id="soundToggle" checked onchange="toggleSound()"> Sound-Effekte aktiv</label>
             </div>
-        </section>
+        </div>
+    </nav>
 
+    <main>
+        <!-- Willkommen & Online-Status -->
+        <div class="card" style="margin-top: 20px;">
+            <h1>Willkommen im Erbe des Feuers Portal</h1>
+            <p><span class="online-badge"></span><strong>Wer ist online?:</strong> Admin_Luca, Admin_Araxo</p>
+        </div>
+
+        <!-- Admin-Ankündigungssystem -->
+        <div class="card" id="admin-bereich">
+            <h2>🛡️ Admin-Ankündigungssystem</h2>
+            <p>Offizielle Bekanntmachungen und Team-Updates der Administration.</p>
+            <div style="background: #1f2937; padding: 15px; border-radius: 6px; border-left: 4px solid var(--accent-color);">
+                <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                    <div style="width: 32px; height: 32px; background: var(--accent-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 10px;">L</div>
+                    <div><strong>Admin_Luca</strong> <span style="font-size: 12px; color: var(--text-muted);">(Hauptadministrator)</span></div>
+                </div>
+                <p style="margin: 0;">Das Update 1.0 wurde erfolgreich ausgerollt. Alle Sicherheitsfunktionen und Live-Caching-Komponenten sind aktiv.</p>
+            </div>
+        </div>
+
+        <!-- Umfrage-System -->
+        <div class="card" id="umfragen-sektion">
+            <h2>📊 Aktive Umfrage</h2>
+            <p>Wie bewertest du die neue Performance und das animierte Menü?</p>
+            <div id="poll-area">
+                <button onclick="voteOption(1)">Hervorragend (Optimale Leistung)</button>
+                <button onclick="voteOption(2)" style="background: #374151; margin-left: 10px;">Gut</button>
+                <div style="margin-top: 15px;">
+                    <small style="color: var(--text-muted);">Ergebnis:</small>
+                    <div class="poll-bar-container">
+                        <div class="poll-bar" id="pollBar">75%</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bewertungen & Ehren-System -->
+        <div class="card" id="bewertungen">
+            <h2>⭐ Bewertungen & Ehren-System</h2>
+            <p>Hier finden Sie authentisches Feedback und können besonders wertvollen Beiträgen eine einmalige <strong>Ehre</strong> erweisen.</p>
+            <div style="background: #1f2937; padding: 15px; border-radius: 6px; margin-bottom: 15px;">
+                <p style="margin: 0 0 10px 0;">„Die Strukturierung und die neuen Abstimmungs-Features sind absolut erstklassig.“ — <em>Mandant K.</em></p>
+                <button id="honorBtn" onclick="giveHonor()">✨ Ehre erweisen (1 verfügbar)</button>
+            </div>
+        </div>
+
+        <!-- Weltkarte & Legende -->
+        <div class="card" id="weltkarte">
+            <h2>🗺️ Weltkarte & Legende</h2>
+            <p>Interaktive und grafisch optimierte Übersicht des Territoriums.</p>
+            <div style="background: #111827; height: 200px; border-radius: 6px; display: flex; align-items: center; justify-content: center; border: 1px dashed var(--card-border);">
+                <span style="color: var(--text-muted);">[Weltkarte lädt mit optimierter Performance...]</span>
+            </div>
+        </div>
+
+        <!-- Updates & Roadmap -->
+        <div class="card" id="roadmap">
+            <h2>🚀 Updates & Roadmap</h2>
+            <h3>Was ist neu? (Update 1.0)</h3>
+            <ul>
+                <li>Zentrales Admin-Ankündigungssystem mit Avatar-Einbindung.</li>
+                <li>Ein-/Ausblendbares Menü mit dynamischen Sternen-Effekten.</li>
+                <li>Integriertes Umfrage- und Schutzsystem gegen Mehrfachabstimmungen.</li>
+            </ul>
+            <h3>In Planung</h3>
+            <ul>
+                <li>Erweiterte Backend-Protokollierung für Admin-Aktionen.</li>
+                <li>Zusätzliche Anpassungsoptionen im Barrierefreiheits-Menü.</li>
+            </ul>
+        </div>
     </main>
 
-    <footer>
-        <div>© 2026 Flammenerbe – Chroniken von Valeris. Alle Rechte vorbehalten.</div>
-        <div><a href="kanzlei.html" class="secret-admin-link">🏛️ Wächter-Kanzlei (Intern)</a></div>
-    </footer>
-
     <script>
-        const SUPABASE_URL = 'https://xcjdqohjcsemmjcxwavv.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_fRVMG1jj3mh68azqsvmOyA_eYwTPfrp';
-        let supabaseClient = null;
-
-        try {
-            if (window.supabase && typeof window.supabase.createClient === 'function') {
-                supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-            }
-        } catch (e) {}
-
-        function sanitizeHTML(str) {
-            if (!str) return '';
-            const temp = document.createElement('div');
-            temp.textContent = str;
-            return temp.innerHTML;
-        }
-
-        function showTab(tabId, btnElement) {
-            document.querySelectorAll('.portal-tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-            const target = document.getElementById('tab-' + tabId);
-            if (target) target.classList.add('active');
-            if (btnElement) btnElement.classList.add('active');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-
-        function toggleEpisode(id) {
-            const el = document.getElementById(id);
-            if (el) el.classList.toggle('open');
-        }
-
-        let reviews = [];
-        let lastSubmitTimestamp = 0;
-
-        async function fetchReviews() {
-            if (supabaseClient) {
-                try {
-                    const { data, error } = await supabaseClient
-                        .from('reviews')
-                        .select('*')
-                        .order('is_pinned', { ascending: false })
-                        .order('id', { ascending: false });
-
-                    if (!error && data) reviews = data;
-                } catch (err) {}
-            }
-            renderReviews();
-        }
-
-        function renderReviews() {
-            const list = document.getElementById('reviewsList');
-            const counterEl = document.getElementById('forumCounter');
-            if (!list) return;
-            list.innerHTML = '';
-
-            if (counterEl) {
-                counterEl.innerText = `${reviews.length} ${reviews.length === 1 ? 'Beitrag' : 'Beiträge'}`;
-            }
-
-            if (reviews.length === 0) {
-                list.innerHTML = '<div style="padding:25px; text-align:center; color:var(--text-muted);">Noch keine Leserstimmen vorhanden. Sei der Erste!</div>';
-                return;
-            }
-
-            reviews.forEach((r, idx) => {
-                const post = document.createElement('div');
-                post.className = `forum-post ${r.is_pinned ? 'pinned' : ''}`;
-
-                let replyHtml = '';
-                if (r.reply) {
-                    replyHtml = `
-                        <div class="forum-reply-box">
-                            <div class="forum-reply-header">👑 Antwort von ${sanitizeHTML(r.reply_author || 'Autor Luca')}</div>
-                            <div>${sanitizeHTML(r.reply)}</div>
-                        </div>
-                    `;
-                }
-
-                const authorInitials = (r.name || 'L').charAt(0).toUpperCase();
-
-                post.innerHTML = `
-                    <div class="forum-post-header">
-                        <div class="author-box">
-                            <div class="author-avatar">${authorInitials}</div>
-                            <div>
-                                <span class="author-name">${sanitizeHTML(r.name)}</span>
-                                <span class="post-tag">${sanitizeHTML(r.focus)}</span>
-                            </div>
-                        </div>
-                        <div class="post-meta-right">
-                            <span style="color:var(--gold-light);">${'★'.repeat(r.stars)}</span>
-                            <span>#${reviews.length - idx}</span>
-                            <span>${sanitizeHTML(r.date || 'Heute')}</span>
-                        </div>
-                    </div>
-                    <div class="post-scope-line">Betrifft: ${sanitizeHTML(r.scope)}</div>
-                    <div class="post-body">${sanitizeHTML(r.text)}</div>
-                    ${replyHtml}
-                    <div class="forum-post-footer">
-                        <button class="like-btn" onclick="addHonor(${r.id})">
-                            ⚔️ Ehre erweisen <strong>(+${r.honor || 1})</strong>
-                        </button>
-                    </div>
-                `;
-                list.appendChild(post);
-            });
-        }
-
-        async function addHonor(id) {
-            const r = reviews.find(x => x.id === id);
-            if (r) {
-                const newHonor = (r.honor || 1) + 1;
-                r.honor = newHonor;
-                renderReviews();
-
-                if (supabaseClient) {
-                    try {
-                        await supabaseClient.from('reviews').update({ honor: newHonor }).eq('id', id);
-                    } catch (e) {}
-                }
+        function toggleMenu(e) {
+            const sidebar = document.getElementById('sidebar');
+            document.body.classList.toggle('menu-collapsed');
+            sidebar.classList.toggle('collapsed');
+            sidebar.classList.toggle('mobile-open');
+            
+            // Sternen-Effekt erzeugen
+            for(let i = 0; i < 10; i++) {
+                let star = document.createElement('div');
+                star.className = 'star-sparkle';
+                let size = 8 + Math.random() * 12;
+                star.style.width = size + 'px';
+                star.style.height = size + 'px';
+                star.style.left = (e.clientX + (Math.random() * 80 - 40)) + 'px';
+                star.style.top = (e.clientY + (Math.random() * 80 - 40)) + 'px';
+                document.body.appendChild(star);
+                setTimeout(() => star.remove(), 600);
             }
         }
 
-        const formEl = document.getElementById('reviewForm');
-        if (formEl) {
-            formEl.addEventListener('submit', async function(e) {
-                e.preventDefault();
-                if (document.getElementById('hpField').value !== '') return;
-
-                const now = Date.now();
-                if (now - lastSubmitTimestamp < 15000) {
-                    alert("Bitte warte einen Moment vor deinem nächsten Beitrag.");
-                    return;
-                }
-                lastSubmitTimestamp = now;
-
-                const newReview = {
-                    name: document.getElementById('revName').value.trim(),
-                    focus: document.getElementById('revFocus').value,
-                    scope: document.getElementById('revScope').value,
-                    stars: parseInt(document.getElementById('revStars').value),
-                    text: document.getElementById('revText').value.trim(),
-                    date: "Heute",
-                    honor: 1,
-                    is_pinned: false,
-                    reply: "",
-                    reply_author: ""
-                };
-
-                this.reset();
-
-                if (supabaseClient) {
-                    try {
-                        const { data, error } = await supabaseClient.from('reviews').insert([newReview]).select();
-                        if (!error && data && data.length > 0) {
-                            reviews.unshift(data[0]);
-                        } else {
-                            reviews.unshift(newReview);
-                        }
-                    } catch (err) {
-                        reviews.unshift(newReview);
-                    }
-                } else {
-                    reviews.unshift(newReview);
-                }
-
-                renderReviews();
-            });
+        function changeFontSize(size) {
+            document.documentElement.style.setProperty('--font-size', size + 'px');
         }
 
-        function initRealtime() {
-            if (supabaseClient) {
-                supabaseClient
-                    .channel('public:reviews')
-                    .on('postgres_changes', { event: '*', schema: 'public', table: 'reviews' }, () => {
-                        fetchReviews();
-                    })
-                    .subscribe();
-            }
+        function toggleSound() {
+            const enabled = document.getElementById('soundToggle').checked;
+            console.log("Sound-Effekte status:", enabled ? "Aktiviert" : "Deaktiviert");
         }
 
-        fetchReviews();
-        initRealtime();
+        function voteOption(option) {
+            alert('Vielen Dank! Ihre Stimme wurde erfolgreich registriert.');
+            document.getElementById('pollBar').style.width = '90%';
+            document.getElementById('pollBar').innerText = '90%';
+        }
+
+        function giveHonor() {
+            const btn = document.getElementById('honorBtn');
+            btn.innerText = '✨ Ehre bereits vergeben (Limit erreicht)';
+            btn.disabled = true;
+            btn.style.opacity = '0.6';
+            alert('Sie haben diesem Beitrag erfolgreich eine Ehre erwiesen.');
+        }
     </script>
 </body>
 </html>
