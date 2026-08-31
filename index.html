@@ -3,308 +3,524 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Erbe des Feuers - Portal & News (Update 1.0)</title>
+    <title>Wächter-Kanzlei – Flammenerbe</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
-            --bg-color: #0f1115;
-            --card-bg: #181b22;
-            --card-border: #2d3748;
-            --accent-color: #d97706;
-            --accent-hover: #f59e0b;
-            --text-color: #e5e7eb;
-            --text-muted: #9ca3af;
-            --font-size: 16px;
+            --bg-void: #09070c;
+            --bg-surface: #130f1c;
+            --bg-card: #1c152a;
+            --gold-primary: #d4af37;
+            --gold-light: #f3e5ab;
+            --border-gold: 1px solid rgba(212, 175, 55, 0.25);
+            --text-main: #f0ebe1;
+            --text-muted: #9e9587;
+            --font-title: 'Cinzel', serif;
+            --font-ui: 'Montserrat', sans-serif;
         }
-        * { box-sizing: border-box; }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            font-family: system-ui, -apple-system, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            font-size: var(--font-size);
-            margin: 0;
-            display: flex;
+            background-color: var(--bg-void);
+            font-family: var(--font-ui);
+            color: var(--text-main);
             min-height: 100vh;
-            overflow-x: hidden;
+            padding: 40px 20px;
+            background-image: radial-gradient(circle at 50% 0%, #1a1226 0%, var(--bg-void) 70%);
         }
-        /* Animiertes Sidebar-Menü */
-        #sidebar {
-            width: 280px;
-            background-color: var(--card-bg);
-            border-right: 1px solid var(--card-border);
-            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), width 0.4s ease;
-            position: fixed;
-            height: 100vh;
-            z-index: 1001;
-            overflow-y: auto;
-            left: 0;
-            top: 0;
-        }
-        #sidebar.collapsed {
-            transform: translateX(-280px);
-            width: 0;
-        }
-        .sidebar-content {
-            padding: 20px;
-        }
-        /* Sternen-Effekt beim Ein-/Ausblenden */
-        .star-sparkle {
-            position: absolute;
-            pointer-events: none;
-            background: radial-gradient(circle, #ff0 0%, #d97706 50%, transparent 70%);
-            border-radius: 50%;
-            animation: sparkleAnim 0.6s forwards;
-            z-index: 2000;
-        }
-        @keyframes sparkleAnim {
-            0% { transform: scale(0); opacity: 1; }
-            100% { transform: scale(1.8); opacity: 0; }
-        }
-        /* Hauptlayout */
-        main {
-            flex: 1;
-            margin-left: 280px;
-            transition: margin-left 0.4s ease;
+
+        .kanzlei-container { max-width: 950px; margin: 0 auto; }
+        .kanzlei-header { text-align: center; margin-bottom: 30px; }
+        .kanzlei-header h1 { font-family: var(--font-title); font-size: 2.2rem; color: var(--gold-light); letter-spacing: 3px; margin-bottom: 8px; }
+        .kanzlei-header p { color: var(--text-muted); font-size: 0.9rem; letter-spacing: 1px; }
+
+        .kanzlei-card {
+            background: var(--bg-surface);
+            border: var(--border-gold);
+            border-radius: 8px;
             padding: 30px;
-            max-width: 1200px;
+            margin-bottom: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
         }
-        body.menu-collapsed main {
-            margin-left: 0;
+
+        .kanzlei-card h3 {
+            font-family: var(--font-title);
+            font-size: 1.2rem;
+            color: var(--gold-light);
+            margin-bottom: 20px;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.15);
+            padding-bottom: 10px;
         }
-        .card {
-            background-color: var(--card-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 10px;
-            padding: 24px;
-            margin-bottom: 24px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
+        .form-group { display: flex; flex-direction: column; gap: 6px; }
+        .form-group.full { grid-column: span 2; }
+        label { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 1px; color: var(--gold-primary); font-weight: 600; }
+
+        .input-field {
+            width: 100%;
+            background: var(--bg-void);
+            border: var(--border-gold);
+            color: #fff;
+            padding: 12px 16px;
+            border-radius: 6px;
+            font-family: var(--font-ui);
+            font-size: 0.9rem;
         }
-        h1, h2, h3 { color: #f3f4f6; margin-top: 0; }
-        button {
-            background-color: var(--accent-color);
-            color: white;
+        .input-field:focus { outline: none; border-color: var(--gold-light); }
+
+        .btn-gold {
+            background: linear-gradient(135deg, #d4af37 0%, #aa8c2c 100%);
+            color: #09070c;
+            font-weight: 700;
             border: none;
-            padding: 10px 18px;
+            padding: 14px 24px;
             border-radius: 6px;
             cursor: pointer;
-            font-weight: 600;
-            transition: background 0.2s;
+            width: 100%;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            font-family: var(--font-title);
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
         }
-        button:hover { background-color: var(--accent-hover); }
-        .nav-toggle {
-            position: fixed;
-            top: 15px;
-            left: 15px;
-            z-index: 1002;
-            background: #1f2937;
-            border: 1px solid var(--card-border);
-            color: var(--text-color);
-            padding: 8px 12px;
+        .btn-gold:hover { background: linear-gradient(135deg, #f3e5ab 0%, #d4af37 100%); }
+
+        .table-wrapper { overflow-x: auto; }
+        .kanzlei-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+        .kanzlei-table th { background: var(--bg-card); color: var(--gold-light); font-family: var(--font-title); text-align: left; padding: 12px 14px; border-bottom: 2px solid rgba(212, 175, 55, 0.3); }
+        .kanzlei-table td { padding: 14px; border-bottom: var(--border-gold); color: var(--text-main); }
+
+        /* DESIGN-UPGRADE FÜR LESERSTIMMEN (KARTEN-LAYOUT) */
+        .reviews-feed {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .review-post-card {
+            background: var(--bg-card);
+            border: var(--border-gold);
             border-radius: 6px;
-            cursor: pointer;
+            padding: 20px;
+            position: relative;
+            transition: border-color 0.2s;
         }
-        .online-badge {
-            display: inline-block.inline;
-            width: 10px;
-            height: 10px;
-            background-color: #10b981;
-            border-radius: 50%;
-            margin-right: 6px;
+
+        .review-post-card:hover {
+            border-color: rgba(212, 175, 55, 0.5);
         }
-        /* Einstellungen & Controls */
-        .settings-group {
+
+        .review-header-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.1);
+            padding-bottom: 8px;
+        }
+
+        .review-author-name {
+            font-family: var(--font-title);
+            color: var(--gold-light);
+            font-size: 1rem;
+            font-weight: 700;
+        }
+
+        .review-date {
+            color: var(--text-muted);
+            font-size: 0.78rem;
+        }
+
+        .review-body-text {
+            color: var(--text-main);
+            font-size: 0.92rem;
+            line-height: 1.5;
             margin-bottom: 15px;
         }
-        .settings-group label {
+
+        .review-reply-box {
+            background: rgba(212, 175, 55, 0.05);
+            border-left: 3px solid var(--gold-primary);
+            padding: 10px 15px;
+            margin-bottom: 15px;
+            border-radius: 0 4px 4px 0;
+            font-size: 0.88rem;
+        }
+
+        .review-reply-box strong {
+            color: var(--gold-light);
             display: block;
-            margin-bottom: 5px;
-            color: var(--text-muted);
-            font-size: 14px;
+            margin-bottom: 4px;
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
-        input[type="range"] { width: 100%; accent-color: var(--accent-color); }
-        /* Umfragen Balken */
-        .poll-bar-container {
-            background: #2d3748;
-            border-radius: 4px;
-            overflow: hidden;
-            height: 24px;
-            margin-top: 10px;
+
+        .review-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
         }
-        .poll-bar {
-            background-color: var(--accent-color);
-            height: 100%;
-            width: 75%;
-            text-align: right;
-            padding-right: 10px;
-            line-height: 24px;
-            font-size: 14px;
-            font-weight: bold;
-        }
-        /* Navigation Links */
-        .sidebar-menu { list-style: none; padding: 0; margin: 20px 0; }
-        .sidebar-menu li { margin-bottom: 12px; }
-        .sidebar-menu a {
-            color: var(--text-color);
-            text-decoration: none;
-            display: block;
-            padding: 8px 12px;
-            border-radius: 6px;
-            transition: background 0.2s;
-        }
-        .sidebar-menu a:hover, .sidebar-menu a.active {
-            background-color: #21262d;
-            color: var(--accent-color);
-        }
-        @media(max-width: 768px) {
-            #sidebar { transform: translateX(-280px); width: 280px; }
-            #sidebar.mobile-open { transform: translateX(0); }
-            main { margin-left: 0 !important; padding: 20px 15px; }
-            .nav-toggle { display: block; }
-        }
+
+        .action-btn { background: rgba(212, 175, 55, 0.1); border: 1px solid rgba(212, 175, 55, 0.4); color: var(--gold-light); padding: 6px 14px; border-radius: 4px; cursor: pointer; font-size: 0.78rem; font-weight: 600; transition: background 0.2s; }
+        .action-btn:hover { background: rgba(212, 175, 55, 0.25); }
+
+        .danger-btn { background: rgba(180, 50, 50, 0.15); border: 1px solid rgba(180, 50, 50, 0.5); color: #ff8888; padding: 6px 14px; border-radius: 4px; cursor: pointer; font-size: 0.78rem; font-weight: 600; transition: background 0.2s; }
+        .danger-btn:hover { background: rgba(180, 50, 50, 0.3); }
+
+        .auth-bar { display: flex; justify-content: space-between; align-items: center; background: var(--bg-card); padding: 15px 20px; border-radius: 6px; border: var(--border-gold); margin-bottom: 25px; }
+        .back-link { display: block; text-align: center; margin-top: 30px; color: var(--gold-primary); text-decoration: none; font-size: 0.85rem; letter-spacing: 1px; }
+        
+        .error-banner { background: rgba(180, 50, 50, 0.2); border: 1px solid #ff8888; color: #ff8888; padding: 10px; border-radius: 4px; margin-bottom: 15px; font-size: 0.85rem; display: none; text-align: center; }
+        .tab-buttons { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tab-btn { flex: 1; background: var(--bg-void); border: var(--border-gold); color: var(--text-muted); padding: 10px; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 0.8rem; text-transform: uppercase; }
+        .tab-btn.active { background: rgba(212, 175, 55, 0.15); color: var(--gold-light); border-color: var(--gold-primary); }
     </style>
 </head>
 <body>
-    <button class="nav-toggle" onclick="toggleMenu(event)">☰ Menü</button>
-    
-    <nav id="sidebar">
-        <div class="sidebar-content">
-            <h2>Portal 1.0</h2>
-            <ul class="sidebar-menu">
-                <li><a href="index.html" class="active">🏠 Hauptseite & News</a></li>
-                <li><a href="kanzlei.html">⚖️ Kanzlei-Ansicht</a></li>
-                <li><a href="#admin-bereich">🛡️ Admin-Bereich</a></li>
-                <li><a href="#umfragen-sektion">📊 Umfragen</a></li>
-                <li><a href="#weltkarte">🗺️ Weltkarte & Legende</a></li>
-                <li><a href="#bewertungen">⭐ Bewertungen & Ehren</a></li>
-                <li><a href="#roadmap">🚀 Roadmap & Updates</a></li>
-            </ul>
-            
-            <hr style="border-color: var(--card-border); margin: 20px 0;">
-            
-            <h3>⚙️ Einstellungsmenü</h3>
-            <div class="settings-group">
-                <label>Schriftgröße anpassen:</label>
-                <input type="range" min="12" max="22" value="16" oninput="changeFontSize(this.value)">
-            </div>
-            <div class="settings-group">
-                <label><input type="checkbox" id="soundToggle" checked onchange="toggleSound()"> Sound-Effekte aktiv</label>
-            </div>
-        </div>
-    </nav>
 
-    <main>
-        <!-- Willkommen & Online-Status -->
-        <div class="card" style="margin-top: 20px;">
-            <h1>Willkommen im Erbe des Feuers Portal</h1>
-            <p><span class="online-badge"></span><strong>Wer ist online?:</strong> Admin_Luca, Admin_Araxo</p>
+    <div class="kanzlei-container">
+        <div class="kanzlei-header">
+            <h1>🏛️ Wächter-Kanzlei</h1>
+            <p>Zentrale Verwaltung für das literarische Universum von Flammenerbe</p>
         </div>
 
-        <!-- Admin-Ankündigungssystem -->
-        <div class="card" id="admin-bereich">
-            <h2>🛡️ Admin-Ankündigungssystem</h2>
-            <p>Offizielle Bekanntmachungen und Team-Updates der Administration.</p>
-            <div style="background: #1f2937; padding: 15px; border-radius: 6px; border-left: 4px solid var(--accent-color);">
-                <div style="display: flex; align-items: center; margin-bottom: 8px;">
-                    <div style="width: 32px; height: 32px; background: var(--accent-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 10px;">L</div>
-                    <div><strong>Admin_Luca</strong> <span style="font-size: 12px; color: var(--text-muted);">(Hauptadministrator)</span></div>
+        <!-- AUTH BEREICH -->
+        <div id="authSection" class="kanzlei-card" style="max-width: 500px; margin: 0 auto;">
+            <div class="tab-buttons">
+                <button id="tabLogin" class="tab-btn active" onclick="switchTab('login')">Anmelden</button>
+                <button id="tabRegister" class="tab-btn" onclick="switchTab('register')">Mit Einladungscode</button>
+            </div>
+
+            <div id="loginError" class="error-banner"></div>
+
+            <!-- LOGIN FORMULAR -->
+            <div id="formLogin">
+                <h3 style="margin-bottom:15px;">🔑 Wächter-Login</h3>
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label>Wächter-Name</label>
+                    <input type="text" id="loginName" class="input-field" placeholder="Dein Name...">
                 </div>
-                <p style="margin: 0;">Das Update 1.0 wurde erfolgreich ausgerollt. Alle Sicherheitsfunktionen und Live-Caching-Komponenten sind aktiv.</p>
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label>Zugangsschlüssel</label>
+                    <input type="password" id="loginPass" class="input-field" placeholder="Dein Passwort...">
+                </div>
+                <button class="btn-gold" onclick="executeLogin()">In die Kanzlei eintreten ⚔️</button>
+            </div>
+
+            <!-- REGISTRIERUNGS FORMULAR -->
+            <div id="formRegister" style="display:none;">
+                <h3 style="margin-bottom:15px;">📜 Dem Rat beitreten</h3>
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label>Dein gewünschter Name</label>
+                    <input type="text" id="regName" class="input-field" placeholder="Name für deinen Account...">
+                </div>
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label>Dein eigenes Passwort</label>
+                    <input type="password" id="regPass" class="input-field" placeholder="Sicheres Passwort wählen...">
+                </div>
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label>Geheimer Einladungscode</label>
+                    <input type="text" id="regCode" class="input-field" placeholder="z.B. CHRONIST-2026">
+                </div>
+                <button class="btn-gold" onclick="executeRegister()">Account freischalten ⚔️</button>
             </div>
         </div>
 
-        <!-- Umfrage-System -->
-        <div class="card" id="umfragen-sektion">
-            <h2>📊 Aktive Umfrage</h2>
-            <p>Wie bewertest du die neue Performance und das animierte Menü?</p>
-            <div id="poll-area">
-                <button onclick="voteOption(1)">Hervorragend (Optimale Leistung)</button>
-                <button onclick="voteOption(2)" style="background: #374151; margin-left: 10px;">Gut</button>
-                <div style="margin-top: 15px;">
-                    <small style="color: var(--text-muted);">Ergebnis:</small>
-                    <div class="poll-bar-container">
-                        <div class="poll-bar" id="pollBar">75%</div>
+        <!-- DASHBOARD -->
+        <div id="dashboardSection" style="display:none;">
+            <div class="auth-bar">
+                <span>Eingeloggter Wächter: <strong id="userDisplay" style="color:var(--gold-light);"></strong></span>
+                <button class="danger-btn" onclick="logout()">Abmelden ✕</button>
+            </div>
+
+            <!-- EINLADUNGSCODE ERSTELLEN (Nur Master) -->
+            <div class="kanzlei-card" id="masterInviteCard" style="display:none;">
+                <h3>🎟️ Einladungscode für Partner erstellen</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Code (z.B. SCHILD-2026)</label>
+                        <input type="text" id="newInviteCode" class="input-field" placeholder="z.B. RITTER-2026">
+                    </div>
+                    <div class="form-group">
+                        <label>Vorgesehene Rolle</label>
+                        <select id="newInviteRole" class="input-field">
+                            <option value="Wächter des Rates">Wächter des Rates</option>
+                            <option value="Chronist">Chronist</option>
+                            <option value="Taktiker">Taktiker</option>
+                        </select>
+                    </div>
+                </div>
+                <button class="btn-gold" onclick="createInviteCode()">Einladungscode generieren 🛡️</button>
+                
+                <div style="margin-top: 20px;">
+                    <label style="margin-bottom: 8px; display:block;">Aktive Einladungscodes:</label>
+                    <div class="table-wrapper">
+                        <table class="kanzlei-table">
+                            <thead><tr><th>Code</th><th>Rolle</th><th>Aktion</th></tr></thead>
+                            <tbody id="invitesList"><tr><td colspan="3" style="text-align:center; color:var(--text-muted);">Keine aktiven Codes.</td></tr></tbody>
+                        </table>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Bewertungen & Ehren-System -->
-        <div class="card" id="bewertungen">
-            <h2>⭐ Bewertungen & Ehren-System</h2>
-            <p>Hier finden Sie authentisches Feedback und können besonders wertvollen Beiträgen eine einmalige <strong>Ehre</strong> erweisen.</p>
-            <div style="background: #1f2937; padding: 15px; border-radius: 6px; margin-bottom: 15px;">
-                <p style="margin: 0 0 10px 0;">„Die Strukturierung und die neuen Abstimmungs-Features sind absolut erstklassig.“ — <em>Mandant K.</em></p>
-                <button id="honorBtn" onclick="giveHonor()">✨ Ehre erweisen (1 verfügbar)</button>
+            <!-- RAT MITGLIEDER -->
+            <div class="kanzlei-card">
+                <h3>👥 Der Wächter-Rat</h3>
+                <div class="table-wrapper">
+                    <table class="kanzlei-table">
+                        <thead><tr><th>Name</th><th>Rang</th><th>Aktion</th></tr></thead>
+                        <tbody id="councilList"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- LESERSTIMMEN (NEUES EDLES KARTEN-LAYOUT) -->
+            <div class="kanzlei-card">
+                <h3>💬 Leserstimmen & Kommentare</h3>
+                <div id="reviewsFeedContainer" class="reviews-feed">
+                    <div style="text-align:center; color:var(--text-muted); padding:20px;">Lade Leserstimmen...</div>
+                </div>
             </div>
         </div>
 
-        <!-- Weltkarte & Legende -->
-        <div class="card" id="weltkarte">
-            <h2>🗺️ Weltkarte & Legende</h2>
-            <p>Interaktive und grafisch optimierte Übersicht des Territoriums.</p>
-            <div style="background: #111827; height: 200px; border-radius: 6px; display: flex; align-items: center; justify-content: center; border: 1px dashed var(--card-border);">
-                <span style="color: var(--text-muted);">[Weltkarte lädt mit optimierter Performance...]</span>
-            </div>
-        </div>
-
-        <!-- Updates & Roadmap -->
-        <div class="card" id="roadmap">
-            <h2>🚀 Updates & Roadmap</h2>
-            <h3>Was ist neu? (Update 1.0)</h3>
-            <ul>
-                <li>Zentrales Admin-Ankündigungssystem mit Avatar-Einbindung.</li>
-                <li>Ein-/Ausblendbares Menü mit dynamischen Sternen-Effekten.</li>
-                <li>Integriertes Umfrage- und Schutzsystem gegen Mehrfachabstimmungen.</li>
-            </ul>
-            <h3>In Planung</h3>
-            <ul>
-                <li>Erweiterte Backend-Protokollierung für Admin-Aktionen.</li>
-                <li>Zusätzliche Anpassungsoptionen im Barrierefreiheits-Menü.</li>
-            </ul>
-        </div>
-    </main>
+        <a href="index.html" class="back-link">← Zurück zum Hauptportal</a>
+    </div>
 
     <script>
-        function toggleMenu(e) {
-            const sidebar = document.getElementById('sidebar');
-            document.body.classList.toggle('menu-collapsed');
-            sidebar.classList.toggle('collapsed');
-            sidebar.classList.toggle('mobile-open');
-            
-            // Sternen-Effekt erzeugen
-            for(let i = 0; i < 10; i++) {
-                let star = document.createElement('div');
-                star.className = 'star-sparkle';
-                let size = 8 + Math.random() * 12;
-                star.style.width = size + 'px';
-                star.style.height = size + 'px';
-                star.style.left = (e.clientX + (Math.random() * 80 - 40)) + 'px';
-                star.style.top = (e.clientY + (Math.random() * 80 - 40)) + 'px';
-                document.body.appendChild(star);
-                setTimeout(() => star.remove(), 600);
+        const SUPABASE_URL = 'https://xcjdqohjcsemmjcxwavv.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_fRVMG1jj3mh68azqsvmOyA_eYwTPfrp';
+        
+        let supabaseClient = null;
+        let activeUser = null;
+
+        try {
+            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        } catch (e) {
+            console.error("Supabase Init Fehler:", e);
+        }
+
+        function switchTab(tab) {
+            document.getElementById('loginError').style.display = 'none';
+            if (tab === 'login') {
+                document.getElementById('tabLogin').className = 'tab-btn active';
+                document.getElementById('tabRegister').className = 'tab-btn';
+                document.getElementById('formLogin').style.display = 'block';
+                document.getElementById('formRegister').style.display = 'none';
+            } else {
+                document.getElementById('tabLogin').className = 'tab-btn';
+                document.getElementById('tabRegister').className = 'tab-btn active';
+                document.getElementById('formLogin').style.display = 'none';
+                document.getElementById('formRegister').style.display = 'block';
             }
         }
 
-        function changeFontSize(size) {
-            document.documentElement.style.setProperty('--font-size', size + 'px');
+        function executeLogin() {
+            const nameInput = document.getElementById('loginName').value.trim();
+            const passInput = document.getElementById('loginPass').value.trim();
+            const errDiv = document.getElementById('loginError');
+            errDiv.style.display = 'none';
+
+            if (!nameInput || !passInput) {
+                errDiv.style.display = 'block';
+                errDiv.innerText = "Bitte Name und Passwort eingeben!";
+                return;
+            }
+
+            if (nameInput.toLowerCase() === 'luca' && passInput === 'Luca2614.') {
+                activeUser = { name: 'Luca', role: 'Haupt-Wächter (Autor)', is_master: true };
+                openDashboard();
+                return;
+            }
+
+            if (supabaseClient) {
+                supabaseClient.from('council').select('*').then(({ data, error }) => {
+                    if (error || !data) {
+                        errDiv.style.display = 'block';
+                        errDiv.innerText = "Datenbankfehler beim Login.";
+                        return;
+                    }
+                    const found = data.find(u => u.name && u.name.toLowerCase() === nameInput.toLowerCase() && String(u.pass || u.password) === passInput);
+                    if (found) {
+                        activeUser = found;
+                        openDashboard();
+                    } else {
+                        errDiv.style.display = 'block';
+                        errDiv.innerText = "Falscher Name oder falsches Passwort!";
+                    }
+                });
+            }
         }
 
-        function toggleSound() {
-            const enabled = document.getElementById('soundToggle').checked;
-            console.log("Sound-Effekte status:", enabled ? "Aktiviert" : "Deaktiviert");
+        async function executeRegister() {
+            const name = document.getElementById('regName').value.trim();
+            const pass = document.getElementById('regPass').value.trim();
+            const code = document.getElementById('regCode').value.trim();
+            const errDiv = document.getElementById('loginError');
+            errDiv.style.display = 'none';
+
+            if (!name || !pass || !code) {
+                errDiv.style.display = 'block';
+                errDiv.innerText = "Bitte alle Felder für die Registrierung ausfüllen!";
+                return;
+            }
+
+            if (!supabaseClient) {
+                errDiv.style.display = 'block';
+                errDiv.innerText = "Keine Verbindung zur Datenbank.";
+                return;
+            }
+
+            const { data: inviteData, error: inviteErr } = await supabaseClient.from('invites').select('*').eq('code', code).single();
+            
+            if (inviteErr || !inviteData) {
+                errDiv.style.display = 'block';
+                errDiv.innerText = "Ungültiger oder bereits verwendeter Einladungscode!";
+                return;
+            }
+
+            const { error: insertErr } = await supabaseClient.from('council').insert([{
+                name: name,
+                role: inviteData.role,
+                is_master: false,
+                pass: pass
+            }]);
+
+            if (insertErr) {
+                errDiv.style.display = 'block';
+                errDiv.innerText = "Fehler beim Erstellen des Accounts: " + insertErr.message;
+                return;
+            }
+
+            await supabaseClient.from('invites').delete().eq('code', code);
+
+            activeUser = { name: name, role: inviteData.role, is_master: false };
+            alert("Account erfolgreich erstellt! Du bist nun Mitglied im Wächter-Rat.");
+            openDashboard();
         }
 
-        function voteOption(option) {
-            alert('Vielen Dank! Ihre Stimme wurde erfolgreich registriert.');
-            document.getElementById('pollBar').style.width = '90%';
-            document.getElementById('pollBar').innerText = '90%';
+        function openDashboard() {
+            document.getElementById('authSection').style.display = 'none';
+            document.getElementById('dashboardSection').style.display = 'block';
+            document.getElementById('userDisplay').innerText = `${activeUser.name} (${activeUser.role || 'Wächter'})`;
+            document.getElementById('masterInviteCard').style.display = activeUser.is_master ? 'block' : 'none';
+            loadDataFromDatabase();
         }
 
-        function giveHonor() {
-            const btn = document.getElementById('honorBtn');
-            btn.innerText = '✨ Ehre bereits vergeben (Limit erreicht)';
-            btn.disabled = true;
-            btn.style.opacity = '0.6';
-            alert('Sie haben diesem Beitrag erfolgreich eine Ehre erwiesen.');
+        function logout() {
+            activeUser = null;
+            document.getElementById('loginName').value = '';
+            document.getElementById('loginPass').value = '';
+            document.getElementById('dashboardSection').style.display = 'none';
+            document.getElementById('authSection').style.display = 'block';
+        }
+
+        async function loadDataFromDatabase() {
+            if (!supabaseClient) return;
+
+            // LESERSTIMMEN ALS SCHÖNE KARTEN GERENDERT
+            const { data: rData } = await supabaseClient.from('reviews').select('*').order('id', { ascending: false });
+            const feedContainer = document.getElementById('reviewsFeedContainer');
+            feedContainer.innerHTML = '';
+            
+            if (!rData || rData.length === 0) {
+                feedContainer.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:20px;">Bisher sind keine Leserstimmen eingegangen.</div>`;
+            } else {
+                rData.forEach(r => {
+                    let replySection = '';
+                    if (r.reply) {
+                        replySection = `
+                            <div class="review-reply-box">
+                                <strong>Offizielle Replik von ${r.reply_author || 'Autor'}</strong>
+                                ${r.reply}
+                            </div>
+                        `;
+                    }
+
+                    feedContainer.innerHTML += `
+                        <div class="review-post-card">
+                            <div class="review-header-info">
+                                <span class="review-author-name">${r.name}</span>
+                                <span class="review-date">${r.date || ''}</span>
+                            </div>
+                            <div class="review-body-text">${r.text}</div>
+                            ${replySection}
+                            <div class="review-actions">
+                                <button class="action-btn" onclick="replyReview(${r.id})">💬 Replik verfassen</button>
+                                <button class="danger-btn" onclick="deleteReview(${r.id})">Löschen</button>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            // Rat
+            const { data: cData } = await supabaseClient.from('council').select('*');
+            const cTbody = document.getElementById('councilList');
+            cTbody.innerHTML = '';
+            cData?.forEach(m => {
+                cTbody.innerHTML += `<tr><td><strong>${m.name}</strong></td><td>${m.role || 'Wächter'}</td><td>${m.is_master ? '<span style="color:var(--text-muted);">Haupt-Wächter</span>' : (activeUser.is_master ? `<button class="danger-btn" onclick="deleteMember(${m.id})">Entlassen</button>` : '—')}</td></tr>`;
+            });
+
+            // Einladungscodes (nur Master)
+            if (activeUser.is_master) {
+                const { data: iData } = await supabaseClient.from('invites').select('*');
+                const iTbody = document.getElementById('invitesList');
+                iTbody.innerHTML = (!iData || iData.length === 0) ? `<tr><td colspan="3" style="text-align:center; color:var(--text-muted);">Keine aktiven Codes.</td></tr>` : '';
+                iData?.forEach(i => {
+                    iTbody.innerHTML += `<tr><td><code>${i.code}</code></td><td>${i.role}</td><td><button class="danger-btn" onclick="deleteInvite('${i.code}')">Löschen</button></td></tr>`;
+                });
+            }
+        }
+
+        async function createInviteCode() {
+            const code = document.getElementById('newInviteCode').value.trim();
+            const role = document.getElementById('newInviteRole').value;
+
+            if (!code) {
+                alert("Bitte einen Code eingeben!");
+                return;
+            }
+
+            const { error } = await supabaseClient.from('invites').insert([{ code, role }]);
+            if (error) {
+                alert("Fehler beim Erstellen (Code existiert vielleicht schon): " + error.message);
+            } else {
+                alert("Einladungscode erfolgreich erstellt!");
+                document.getElementById('newInviteCode').value = '';
+                loadDataFromDatabase();
+            }
+        }
+
+        async function deleteInvite(code) {
+            await supabaseClient.from('invites').delete().eq('code', code);
+            loadDataFromDatabase();
+        }
+
+        async function deleteMember(id) {
+            if (confirm("Diesen Wächter entlassen?")) {
+                await supabaseClient.from('council').delete().eq('id', id);
+                loadDataFromDatabase();
+            }
+        }
+
+        async function replyReview(id) {
+            const rep = prompt("Offizielle Autoren-Replik verfassen:");
+            if (rep !== null) {
+                await supabaseClient.from('reviews').update({ reply: rep.trim(), reply_author: activeUser.name }).eq('id', id);
+                loadDataFromDatabase();
+            }
+        }
+
+        async function deleteReview(id) {
+            if (confirm("Diesen Kommentar unwiderruflich löschen?")) {
+                await supabaseClient.from('reviews').delete().eq('id', id);
+                loadDataFromDatabase();
+            }
         }
     </script>
 </body>
